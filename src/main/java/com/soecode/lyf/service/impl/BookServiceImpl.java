@@ -24,7 +24,7 @@ public class BookServiceImpl implements BookService {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	// 注入Service依赖
+	// 娉ㄥ叆Service渚濊禆
 	@Autowired
 	private BookDao bookDao;
 
@@ -45,22 +45,24 @@ public class BookServiceImpl implements BookService {
 	@Override
 	@Transactional
 	/**
-	 * 使用注解控制事务方法的优点： 1.开发团队达成一致约定，明确标注事务方法的编程风格
-	 * 2.保证事务方法的执行时间尽可能短，不要穿插其他网络操作，RPC/HTTP请求或者剥离到事务方法外部
-	 * 3.不是所有的方法都需要事务，如只有一条修改操作，只读操作不需要事务控制
+	 * 浣跨敤娉ㄨВ鎺у埗浜嬪姟鏂规硶鐨勪紭鐐癸細 1.寮�鍙戝洟闃熻揪鎴愪竴鑷寸害瀹氾紝鏄庣‘鏍囨敞浜嬪姟鏂规硶鐨勭紪绋嬮鏍�
+	 * 2.淇濊瘉浜嬪姟鏂规硶鐨勬墽琛屾椂闂村敖鍙兘鐭紝涓嶈绌挎彃鍏朵粬缃戠粶鎿嶄綔锛孯PC/HTTP璇锋眰鎴栬�呭墺绂诲埌浜嬪姟鏂规硶澶栭儴
+	 * 3.涓嶆槸鎵�鏈夌殑鏂规硶閮介渶瑕佷簨鍔★紝濡傚彧鏈変竴鏉′慨鏀规搷浣滐紝鍙鎿嶄綔涓嶉渶瑕佷簨鍔℃帶鍒�
 	 */
 	public AppointExecution appoint(long bookId, long studentId) {
 		try {
-			// 减库存
+			// 鍑忓簱瀛�
 			int update = bookDao.reduceNumber(bookId);
-			if (update <= 0) {// 库存不足
+			if (update <= 0) {// 搴撳瓨涓嶈冻
 				throw new NoNumberException("no number");
 			} else {
-				// 执行预约操作
+				// 鎵ц棰勭害鎿嶄綔
 				int insert = appointmentDao.insertAppointment(bookId, studentId);
-				if (insert <= 0) {// 重复预约
-					throw new RepeatAppointException("repeat appoint");
-				} else {// 预约成功
+				if (insert <= 0) {// 閲嶅棰勭害
+					//throw new RepeatAppointException("repeat appoint");
+					Appointment appointment = appointmentDao.queryByKeyWithBook(bookId, studentId);
+					return new AppointExecution(bookId, AppointStateEnum.SUCCESS, appointment);
+				} else {// 棰勭害鎴愬姛
 					Appointment appointment = appointmentDao.queryByKeyWithBook(bookId, studentId);
 					return new AppointExecution(bookId, AppointStateEnum.SUCCESS, appointment);
 				}
@@ -71,7 +73,7 @@ public class BookServiceImpl implements BookService {
 			throw e2;
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
-			// 所有编译期异常转换为运行期异常
+			// 鎵�鏈夌紪璇戞湡寮傚父杞崲涓鸿繍琛屾湡寮傚父
 			throw new AppointException("appoint inner error:" + e.getMessage());
 		}
 	}
